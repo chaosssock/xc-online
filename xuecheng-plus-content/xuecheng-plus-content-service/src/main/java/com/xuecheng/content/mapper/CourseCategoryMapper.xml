@@ -26,7 +26,6 @@
         )
         select * from t1
         order by t1.id, t1.orderby
-
     </select>
 
 </mapper>
