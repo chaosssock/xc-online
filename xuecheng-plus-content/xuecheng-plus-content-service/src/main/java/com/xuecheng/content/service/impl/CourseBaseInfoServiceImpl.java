@@ -11,6 +11,7 @@ import com.xuecheng.content.model.dto.AddCourseDto;
 import com.xuecheng.content.model.dto.CourseBaseInfoDto;
 import com.xuecheng.content.model.dto.QueryCourseParamsDto;
 import com.xuecheng.content.model.po.CourseBase;
+import com.xuecheng.content.model.po.CourseCategory;
 import com.xuecheng.content.model.po.CourseMarket;
 import com.xuecheng.content.service.CourseBaseInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -160,23 +161,27 @@ public class CourseBaseInfoServiceImpl implements CourseBaseInfoService {
 
     // 查询课程信息
     public CourseBaseInfoDto getCourseBaseInfo(long courseId) {
+        CourseBaseInfoDto courseBaseInfoDto = new CourseBaseInfoDto();
         // 从课程基本信息表查询
         CourseBase courseBase = courseBaseMapper.selectById(courseId);
         if (courseBase == null) {
             return null;
         }
+        BeanUtils.copyProperties(courseBase, courseBaseInfoDto);
 
         // 从课程营销表查询
         CourseMarket courseMarket = courseMarketMapper.selectById(courseId);
-
-        // 组装在一起
-        CourseBaseInfoDto courseBaseInfoDto = new CourseBaseInfoDto();
-        BeanUtils.copyProperties(courseBase, courseBaseInfoDto);
-        BeanUtils.copyProperties(courseMarket, courseBaseInfoDto);
+        if (courseMarket!=null){
+            BeanUtils.copyProperties(courseMarket, courseBaseInfoDto);
+        }
 
         // 通过courseCategoryMapper查询分类信息，将分类名称放在courseBaseInfoDto对象
-        // todo：课程分类的名称设置到courseBaseInfoDto对象
-//        List<CourseCategoryTreeDto> courseCategoryTreeDtos = courseCategoryMapper.selectTreeNodes(courseBase.getMt());
+        // 根据小分类id查询课程分类对象
+        CourseCategory courseCategoryBySt = courseCategoryMapper.selectById(courseBase.getSt());
+        courseBaseInfoDto.setStName(courseCategoryBySt.getName());
+        // 根据大分类id查询课程分类对象
+        CourseCategory courseCategoryByMt = courseCategoryMapper.selectById(courseBase.getMt());
+        courseBaseInfoDto.setMtName(courseCategoryByMt.getName());
 
         return courseBaseInfoDto;
     }
