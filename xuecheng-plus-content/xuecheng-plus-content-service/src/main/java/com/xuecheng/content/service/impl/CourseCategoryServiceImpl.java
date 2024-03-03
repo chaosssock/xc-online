@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 /**
  * @Auther: chaosssock
  * @Date: 2024/2/26 22:48
- * @Description: 请输入描述
+ * @Description: 课程分类树形结构查询
  */
 @Slf4j
 @Service
