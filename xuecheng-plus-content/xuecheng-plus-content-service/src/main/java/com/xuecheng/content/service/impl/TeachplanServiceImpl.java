@@ -1,10 +1,13 @@
 package com.xuecheng.content.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.xuecheng.base.exception.XueChengPlusException;
 import com.xuecheng.content.mapper.TeachplanMapper;
+import com.xuecheng.content.mapper.TeachplanMediaMapper;
 import com.xuecheng.content.model.dto.SaveTeachplanDto;
 import com.xuecheng.content.model.dto.TeachplanDto;
 import com.xuecheng.content.model.po.Teachplan;
+import com.xuecheng.content.model.po.TeachplanMedia;
 import com.xuecheng.content.service.TeachplanService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,9 @@ public class TeachplanServiceImpl implements TeachplanService {
 
     @Autowired
     TeachplanMapper teachplanMapper;
+
+    @Autowired
+    TeachplanMediaMapper teachplanMediaMapper;
 
     @Override
     public List<TeachplanDto> findTeachplanTree(long courseId) {
@@ -47,6 +53,34 @@ public class TeachplanServiceImpl implements TeachplanService {
             Teachplan teachplan = teachplanMapper.selectById(teachplanDtoId);
             BeanUtils.copyProperties(saveTeachplanDto,teachplan);
             teachplanMapper.updateById(teachplan);
+        }
+    }
+
+    @Override
+    public void deleteTeachplan(Long teachplanId) {
+        if (teachplanId == null)
+            XueChengPlusException.cast("课程计划id为空");
+        Teachplan teachplan = teachplanMapper.selectById(teachplanId);
+        // 判断当前课程计划是章还是节
+        Integer grade = teachplan.getGrade();
+        // 当前课程计划为章
+        if (grade == 1) {
+            // 查询当前课程计划下是否有小节
+            LambdaQueryWrapper<Teachplan> queryWrapper = new LambdaQueryWrapper<>();
+            // select * from teachplan where parentid = {当前章计划id}
+            queryWrapper.eq(Teachplan::getParentid, teachplanId);
+            // 获取一下查询的条目数
+            Integer count = teachplanMapper.selectCount(queryWrapper);
+            // 如果当前章下还有小节，则抛异常
+            if (count > 0)
+                XueChengPlusException.cast("课程计划信息还有子级信息，无法操作");
+            teachplanMapper.deleteById(teachplanId);
+        } else {
+            // 课程计划为节
+            teachplanMapper.deleteById(teachplanId);
+            LambdaQueryWrapper<TeachplanMedia> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(TeachplanMedia::getTeachplanId, teachplanId);
+            teachplanMediaMapper.delete(queryWrapper);
         }
     }
 
